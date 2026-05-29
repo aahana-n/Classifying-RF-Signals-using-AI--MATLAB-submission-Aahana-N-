@@ -5,7 +5,7 @@ Please add the following items:
 
 [Program link](https://github.com/mathworks/MATLAB-Simulink-Challenge-Project-Hub)
 
-[Project description link]<https://github.com/mathworks/MATLAB-Simulink-Challenge-Project-Hub/blob/main/projects/Classify%20RF%20Signals%20Using%20AI/README.md>
+[Project description link](<https://github.com/mathworks/MATLAB-Simulink-Challenge-Project-Hub/blob/main/projects/Classify%20RF%20Signals%20Using%20AI/README.md>)
 
 
 # Project details
