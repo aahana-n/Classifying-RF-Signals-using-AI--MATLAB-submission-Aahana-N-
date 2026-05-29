@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RF Signal Classifier</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0c0f;
+    --surface: #111418;
+    --surface2: #181c22;
+    --surface3: #1e2330;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --accent: #00e5ff;
+    --accent2: #7c3aed;
+    --accent3: #10b981;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --text: #e8eaf0;
+    --text2: #8892a4;
+    --text3: #4a5568;
+    --mono: 'DM Mono', monospace;
+    --display: 'Syne', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--display);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Scanline grid bg */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.015) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .shell { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 0 24px 80px; }
+
+  /* ── Header ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 28px 0 40px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+  .logo { display: flex; align-items: center; gap: 14px; }
+  .logo-icon {
+    width: 40px; height: 40px;
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .logo-icon::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(0,229,255,0.15), transparent);
+  }
+  .logo-icon svg { width: 22px; height: 22px; color: var(--accent); }
+  .logo-text { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
+  .logo-text span { color: var(--accent); }
+  .status-pill {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+  }
+  .status-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--text3);
+    transition: background 0.3s;
+  }
+  .status-dot.ready { background: var(--accent3); box-shadow: 0 0 6px var(--accent3); }
+  .status-dot.busy { background: var(--warn); animation: blink 0.8s ease-in-out infinite; }
+  .status-dot.error { background: var(--danger); }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  /* ── Tabs ── */
+  .tabs { display: flex; gap: 2px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 4px; margin-bottom: 32px; width: fit-content; }
+  .tab {
+    padding: 8px 20px; border-radius: 7px; font-size: 13px; font-weight: 500;
+    cursor: pointer; border: none; background: transparent; color: var(--text2);
+    transition: all 0.2s; font-family: var(--display);
+  }
+  .tab.active { background: var(--surface3); color: var(--text); border: 1px solid var(--border2); }
+  .tab:hover:not(.active) { color: var(--text); }
+
+  /* ── Panels ── */
+  .panel { display: none; }
+  .panel.active { display: block; animation: fadeUp 0.3s ease; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ── Grid ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media(max-width:800px) { .grid-2,.grid-3 { grid-template-columns: 1fr; } }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0,229,255,0.3), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .card:hover::before { opacity: 1; }
+  .card-title {
+    font-size: 11px; font-weight: 500; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text3);
+    margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+  }
+  .card-title::before {
+    content: '';
+    display: inline-block;
+    width: 16px; height: 1px;
+    background: var(--accent);
+  }
+
+  /* ── Upload zone ── */
+  .upload-zone {
+    border: 1.5px dashed var(--border2);
+    border-radius: 10px;
+    padding: 36px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .upload-zone:hover, .upload-zone.drag { border-color: var(--accent); background: rgba(0,229,255,0.04); }
+  .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .upload-icon { font-size: 28px; margin-bottom: 12px; opacity: 0.5; }
+  .upload-title { font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+  .upload-sub { font-size: 12px; color: var(--text2); font-family: var(--mono); }
+
+  /* ── File info badge ── */
+  .file-badge {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 8px; padding: 10px 14px; margin-top: 12px;
+    font-size: 12px; font-family: var(--mono);
+  }
+  .file-badge .name { color: var(--accent); }
+  .file-badge .meta { color: var(--text3); }
+
+  /* ── Form elements ── */
+  label.field-label { font-size: 11px; color: var(--text2); font-family: var(--mono); display: block; margin-bottom: 8px; }
+  select, input[type=range] {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 8px; color: var(--text); font-family: var(--mono); font-size: 13px;
+    padding: 10px 12px; outline: none;
+    transition: border-color 0.2s;
+  }
+  select:focus { border-color: var(--accent); }
+  select option { background: var(--surface2); }
+  input[type=range] { padding: 6px 0; accent-color: var(--accent); }
+  .range-row { display: flex; align-items: center; gap: 12px; }
+  .range-val { font-family: var(--mono); font-size: 13px; color: var(--accent); min-width: 32px; }
+
+  textarea {
+    width: 100%; min-height: 140px;
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 8px; color: var(--text); font-family: var(--mono); font-size: 12px;
+    padding: 12px 14px; outline: none; resize: vertical;
+    transition: border-color 0.2s; line-height: 1.6;
+  }
+  textarea:focus { border-color: var(--accent); }
+  textarea::placeholder { color: var(--text3); }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 500;
+    cursor: pointer; border: none; font-family: var(--display);
+    transition: all 0.18s; letter-spacing: 0.01em;
+  }
+  .btn-primary {
+    background: var(--accent); color: #000;
+  }
+  .btn-primary:hover { background: #33ecff; transform: translateY(-1px); }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-secondary {
+    background: transparent; color: var(--text2);
+    border: 1px solid var(--border2);
+  }
+  .btn-secondary:hover { color: var(--text); border-color: var(--border2); background: var(--surface2); }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none !important; }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+
+  /* ── Metrics ── */
+  .metric-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+  }
+  .metric-val { font-size: 28px; font-weight: 700; color: var(--accent); font-family: var(--mono); line-height: 1; }
+  .metric-lbl { font-size: 11px; color: var(--text3); margin-top: 6px; font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.07em; }
+
+  /* ── Progress ── */
+  .progress-wrap { margin: 12px 0 6px; }
+  .progress-track {
+    height: 3px; background: var(--surface3); border-radius: 2px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; background: var(--accent); border-radius: 2px;
+    transition: width 0.4s ease;
+    box-shadow: 0 0 8px rgba(0,229,255,0.5);
+  }
+  .progress-label { font-size: 11px; font-family: var(--mono); color: var(--text3); margin-top: 6px; }
+
+  /* ── Log output ── */
+  .log-box {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 14px;
+    font-family: var(--mono); font-size: 11px; color: var(--text2);
+    min-height: 64px; max-height: 120px; overflow-y: auto; line-height: 1.7;
+  }
+
+  /* ── Confusion matrix ── */
+  .cm-wrap { overflow-x: auto; }
+  table.cm {
+    border-collapse: collapse; font-size: 12px; font-family: var(--mono);
+    min-width: 100%; margin-top: 8px;
+  }
+  table.cm th, table.cm td {
+    padding: 8px 14px; text-align: center;
+    border: 1px solid var(--border);
+  }
+  table.cm th { color: var(--text3); font-weight: 400; font-size: 11px; }
+  table.cm td { color: var(--text); }
+  table.cm td.diag { background: rgba(0,229,255,0.12); color: var(--accent); font-weight: 500; }
+  table.cm td.off { background: rgba(239,68,68,0.08); color: #f87171; }
+
+  /* ── Bar chart ── */
+  .bar-chart { margin-top: 6px; }
+  .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .bar-label { font-family: var(--mono); font-size: 12px; color: var(--text2); width: 70px; flex-shrink: 0; }
+  .bar-track { flex: 1; height: 6px; background: var(--surface3); border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+  .bar-pct { font-family: var(--mono); font-size: 12px; color: var(--text); width: 44px; text-align: right; }
+
+  /* ── Constellation canvas ── */
+  canvas { display: block; border-radius: 10px; }
+
+  /* ── Result banner ── */
+  .result-banner {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-left: 3px solid var(--accent);
+    border-radius: 10px;
+    padding: 20px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .result-mod { font-size: 32px; font-weight: 700; color: var(--accent); font-family: var(--mono); }
+  .result-conf { font-size: 13px; color: var(--text2); margin-top: 4px; font-family: var(--mono); }
+  .result-badge {
+    padding: 8px 20px; border-radius: 8px; font-size: 12px; font-weight: 500;
+    font-family: var(--mono); letter-spacing: 0.05em;
+  }
+
+  /* ── Chips ── */
+  .chip {
+    display: inline-block; padding: 3px 10px; border-radius: 100px;
+    font-size: 11px; font-family: var(--mono);
+    background: rgba(0,229,255,0.1); color: var(--accent);
+    border: 1px solid rgba(0,229,255,0.2);
+  }
+  .chip.green { background: rgba(16,185,129,0.1); color: var(--accent3); border-color: rgba(16,185,129,0.2); }
+  .chip.warn { background: rgba(245,158,11,0.1); color: var(--warn); border-color: rgba(245,158,11,0.2); }
+  .chip.red { background: rgba(239,68,68,0.1); color: var(--danger); border-color: rgba(239,68,68,0.2); }
+
+  /* ── Divider ── */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed; bottom: 28px; right: 28px;
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 10px; padding: 12px 18px;
+    font-size: 13px; font-family: var(--mono);
+    transform: translateY(80px); opacity: 0;
+    transition: all 0.3s ease; z-index: 100;
+    max-width: 320px;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+  #toast.err { border-left: 3px solid var(--danger); color: #f87171; }
+  #toast.ok { border-left: 3px solid var(--accent3); color: var(--accent3); }
+
+  /* ── Sample chips ── */
+  .sample-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .sample-chip {
+    padding: 5px 12px; border-radius: 6px; font-size: 11px; font-family: var(--mono);
+    background: var(--surface2); border: 1px solid var(--border2); color: var(--text2);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .sample-chip:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* ── Hidden ── */
+  .hidden { display: none !important; }
+
+  /* ── Section header ── */
+  .section-head { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
+  .section-sub { font-size: 13px; color: var(--text2); margin-bottom: 24px; font-family: var(--mono); }
+
+  /* ── Per-class table ── */
+  table.metrics { width: 100%; border-collapse: collapse; font-size: 12px; font-family: var(--mono); }
+  table.metrics th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text3); padding: 6px 10px; border-bottom: 1px solid var(--border); text-align: right; }
+  table.metrics th:first-child { text-align: left; }
+  table.metrics td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: right; color: var(--text2); }
+  table.metrics td:first-child { text-align: left; color: var(--text); }
+  table.metrics tr:last-child td { border-bottom: none; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M3 12h2l3-8 4 16 3-8h2"/>
+          <circle cx="20" cy="12" r="2" fill="currentColor" opacity="0.4"/>
+        </svg>
+      </div>
+      <div class="logo-text">RF<span>Classify</span></div>
+    </div>
+    <div class="status-pill">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">initializing</span>
+    </div>
+  </header>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('train')">01 / Train</button>
+    <button class="tab" onclick="switchTab('test')">02 / Classify</button>
+    <button class="tab" onclick="switchTab('results')">03 / Results</button>
+  </div>
+
+  <!-- ════ TRAIN PANEL ════ -->
+  <div class="panel active" id="panel-train">
+    <div class="section-head">Train classifier</div>
+    <p class="section-sub">Upload a labeled IQ dataset, configure the model, then train.</p>
+
+    <div class="grid-2" style="margin-bottom:20px;">
+      <!-- Upload -->
+      <div class="card">
+        <div class="card-title">Dataset upload</div>
+        <div class="upload-zone" id="drop-zone">
+          <input type="file" id="file-input" accept=".csv,.txt" onchange="handleFileSelect(event)">
+          <div class="upload-icon">⬆</div>
+          <div class="upload-title">Drop your CSV / TXT file</div>
+          <div class="upload-sub">label, I_1, Q_1, I_2, Q_2, … per row</div>
+        </div>
+        <div id="file-info" class="hidden">
+          <div class="file-badge">
+            <span class="name" id="file-name">—</span>
+            <span class="meta" id="file-meta">—</span>
+          </div>
+          <div style="margin-top:12px;font-size:12px;color:var(--text2);">
+            <div style="margin-bottom:6px;" id="dataset-summary"></div>
+            <div id="class-chips"></div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-secondary" style="font-size:12px;" onclick="downloadTemplate()">⬇ template.csv</button>
+        </div>
+        <div style="margin-top:14px;font-size:11px;color:var(--text3);font-family:var(--mono);line-height:1.7;">
+          <strong style="color:var(--text2);">Format guide</strong><br>
+          Row per signal: <span style="color:var(--accent);">label, I₁, Q₁, I₂, Q₂, …</span><br>
+          Min 64 IQ pairs recommended.<br>
+          Labels: BPSK, QPSK, 16QAM, 64QAM (or custom)
+        </div>
+      </div>
+
+      <!-- Config -->
+      <div class="card">
+        <div class="card-title">Model configuration</div>
+        <div style="margin-bottom:16px;">
+          <label class="field-label">Algorithm</label>
+          <select id="model-type">
+            <option value="mlp">MLP Neural Network (recommended)</option>
+            <option value="rf">Random Forest</option>
+            <option value="gb">Gradient Boosting</option>
+          </select>
+        </div>
+        <div style="margin-bottom:16px;">
+          <label class="field-label">Test split</label>
+          <div class="range-row">
+            <input type="range" id="test-split" min="10" max="40" value="20" step="5" oninput="document.getElementById('split-val').textContent=this.value+'%'">
+            <span class="range-val" id="split-val">20%</span>
+          </div>
+        </div>
+        <hr class="divider">
+        <div style="font-size:11px;color:var(--text3);font-family:var(--mono);line-height:1.9;">
+          <div><span style="color:var(--accent);">MLP</span> → 128→64→32 layers, Adam, early stop</div>
+          <div><span style="color:var(--accent);">RF</span>  → 200 trees, full depth, parallel</div>
+          <div><span style="color:var(--accent);">GB</span>  → 150 estimators, depth-5 trees</div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="train-btn" onclick="startTraining()" disabled>▶ Train model</button>
+        </div>
+        <div class="progress-wrap hidden" id="train-progress-wrap">
+          <div class="progress-track"><div class="progress-fill" id="train-progress" style="width:0%"></div></div>
+          <div class="progress-label" id="train-progress-label">Preparing…</div>
+        </div>
+        <div class="log-box hidden" id="train-log" style="margin-top:12px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ TEST PANEL ════ -->
+  <div class="panel" id="panel-test">
+    <div class="section-head">Classify signal</div>
+    <p class="section-sub">Paste IQ values from MATLAB to predict the modulation scheme.</p>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">IQ input</div>
+        <div class="sample-row">
+          <span style="font-size:11px;color:var(--text3);align-self:center;font-family:var(--mono);">load sample →</span>
+          <span class="sample-chip" onclick="loadSample('BPSK')">BPSK</span>
+          <span class="sample-chip" onclick="loadSample('QPSK')">QPSK</span>
+          <span class="sample-chip" onclick="loadSample('16QAM')">16-QAM</span>
+          <span class="sample-chip" onclick="loadSample('64QAM')">64-QAM</span>
+        </div>
+        <textarea id="iq-input" placeholder="Paste MATLAB IQ values here.&#10;&#10;Accepted formats:&#10;  0.707+0.707i, -0.707-0.707i, ...&#10;  0.707 0.707 (I Q per line)&#10;  [0.707 0.707; -0.707 -0.707]"></textarea>
+        <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:8px;">
+          Min 8 pairs · MATLAB: writematrix([real(sig)' imag(sig)'], 'iq.csv')
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="classify-btn" onclick="classifySignal()">◉ Classify</button>
+          <button class="btn btn-secondary" onclick="document.getElementById('iq-input').value='';document.getElementById('classify-result').classList.add('hidden')">Clear</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Result</div>
+        <div id="classify-result" class="hidden">
+          <div class="result-banner" id="result-banner">
+            <div>
+              <div class="result-mod" id="result-mod">—</div>
+              <div class="result-conf" id="result-conf">—</div>
+            </div>
+            <div class="result-badge" id="result-badge">—</div>
+          </div>
+          <div class="bar-chart" id="prob-bars"></div>
+          <hr class="divider">
+          <div style="text-align:center;">
+            <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:8px;">IQ constellation</div>
+            <canvas id="const-canvas" width="260" height="260" style="margin:0 auto;"></canvas>
+          </div>
+        </div>
+        <div id="classify-empty" style="text-align:center;padding:40px 0;color:var(--text3);font-size:13px;">
+          Paste IQ values and click Classify
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ RESULTS PANEL ════ -->
+  <div class="panel" id="panel-results">
+    <div class="section-head">Training results</div>
+    <p class="section-sub">Model evaluation metrics, confusion matrix, and per-class performance.</p>
+
+    <div id="results-empty" style="text-align:center;padding:60px 0;color:var(--text3);">
+      <div style="font-size:32px;opacity:0.2;margin-bottom:12px;">◎</div>
+      Train a model to see results here
+    </div>
+
+    <div id="results-content" class="hidden">
+      <!-- Top metrics -->
+      <div class="grid-3" style="margin-bottom:20px;">
+        <div class="metric-card">
+          <div class="metric-val" id="res-acc">—</div>
+          <div class="metric-lbl">Test accuracy</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val" id="res-cv">—</div>
+          <div class="metric-lbl">CV mean ± std</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val" id="res-model">—</div>
+          <div class="metric-lbl">Algorithm</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <!-- Confusion matrix -->
+        <div class="card">
+          <div class="card-title">Confusion matrix</div>
+          <div class="cm-wrap" id="cm-container"></div>
+        </div>
+        <!-- Per-class metrics -->
+        <div class="card">
+          <div class="card-title">Per-class metrics</div>
+          <table class="metrics">
+            <thead>
+              <tr>
+                <th>Class</th>
+                <th>Precision</th>
+                <th>Recall</th>
+                <th>F1</th>
+                <th>Support</th>
+              </tr>
+            </thead>
+            <tbody id="metrics-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+const API = '';
+let trainData = null;
+
+// ─── Tab switching ─────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['train','test','results'][i]===name));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+}
+
+// ─── Status ────────────────────────────────────────────────────────────────
+function setStatus(msg, state) {
+  document.getElementById('status-text').textContent = msg;
+  const d = document.getElementById('status-dot');
+  d.className = 'status-dot ' + (state||'');
+}
+
+// ─── Toast ─────────────────────────────────────────────────────────────────
+function toast(msg, type='ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show ' + type;
+  clearTimeout(t._t);
+  t._t = setTimeout(()=>t.className='', 3200);
+}
+
+// ─── File upload ───────────────────────────────────────────────────────────
+const dropZone = document.getElementById('drop-zone');
+dropZone.addEventListener('dragover', e=>{ e.preventDefault(); dropZone.classList.add('drag'); });
+dropZone.addEventListener('dragleave', ()=>dropZone.classList.remove('drag'));
+dropZone.addEventListener('drop', e=>{ e.preventDefault(); dropZone.classList.remove('drag'); const f=e.dataTransfer.files[0]; if(f) processFile(f); });
+
+function handleFileSelect(e) { processFile(e.target.files[0]); }
+
+async function processFile(file) {
+  setStatus('parsing dataset…', 'busy');
+  const form = new FormData();
+  form.append('file', file);
+  try {
+    const r = await fetch(API+'/api/upload-train', { method:'POST', body: form });
+    const d = await r.json();
+    if (!r.ok || d.error) { toast(d.error||'Upload failed', 'err'); setStatus('upload error','error'); return; }
+
+    trainData = { X: d._data, y: d._labels };
+    document.getElementById('file-name').textContent = file.name;
+    document.getElementById('file-meta').textContent = `${d.n_samples} signals · ${d.n_features} features`;
+    document.getElementById('dataset-summary').textContent = `${d.n_samples} samples · ${d.classes.length} classes`;
+    const chips = document.getElementById('class-chips');
+    chips.innerHTML = d.classes.map(c=>`<span class="chip green" style="margin:2px;">${c}: ${d.class_counts[c]}</span>`).join('');
+    document.getElementById('file-info').classList.remove('hidden');
+    document.getElementById('train-btn').disabled = false;
+    setStatus('dataset loaded', 'ready');
+    toast(`Loaded ${d.n_samples} samples across ${d.classes.length} classes`, 'ok');
+  } catch(e) {
+    toast('Network error: '+e.message, 'err');
+    setStatus('error','error');
+  }
+}
+
+// ─── Training ──────────────────────────────────────────────────────────────
+async function startTraining() {
+  if (!trainData) { toast('Upload a dataset first', 'err'); return; }
+  const btn = document.getElementById('train-btn');
+  btn.disabled = true;
+  const logEl = document.getElementById('train-log');
+  const progressWrap = document.getElementById('train-progress-wrap');
+  const progressFill = document.getElementById('train-progress');
+  const progressLabel = document.getElementById('train-progress-label');
+
+  logEl.classList.remove('hidden');
+  progressWrap.classList.remove('hidden');
+  logEl.textContent = '';
+  setStatus('training…', 'busy');
+
+  const steps = [
+    [10,'Extracting features…'],
+    [30,'Fitting scaler…'],
+    [55,'Training model…'],
+    [80,'Running cross-validation…'],
+    [95,'Evaluating on test set…']
+  ];
+  let si = 0;
+  const ticker = setInterval(()=>{
+    if(si<steps.length) {
+      progressFill.style.width = steps[si][0]+'%';
+      progressLabel.textContent = steps[si][1];
+      logEl.textContent += `→ ${steps[si][1]}\n`;
+      logEl.scrollTop = logEl.scrollHeight;
+      si++;
+    }
+  }, 600);
+
+  try {
+    const r = await fetch(API+'/api/train', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        X: trainData.X,
+        y: trainData.y,
+        model_type: document.getElementById('model-type').value,
+        test_size: parseInt(document.getElementById('test-split').value)/100
+      })
+    });
+    clearInterval(ticker);
+    const d = await r.json();
+    if (!r.ok || d.error) { toast(d.error||'Training failed','err'); setStatus('error','error'); btn.disabled=false; return; }
+
+    progressFill.style.width = '100%';
+    progressLabel.textContent = `Done — accuracy: ${(d.accuracy*100).toFixed(1)}%`;
+    logEl.textContent += `✓ Complete. Test acc: ${(d.accuracy*100).toFixed(1)}%  CV: ${(d.cv_mean*100).toFixed(1)}% ± ${(d.cv_std*100).toFixed(1)}%\n`;
+
+    renderResults(d);
+    setStatus('model ready', 'ready');
+    toast(`Trained! Accuracy: ${(d.accuracy*100).toFixed(1)}%`, 'ok');
+    document.getElementById('classify-btn').disabled = false;
+    setTimeout(()=>switchTab('results'), 800);
+  } catch(e) {
+    clearInterval(ticker);
+    toast('Training error: '+e.message,'err');
+    setStatus('error','error');
+  }
+  btn.disabled = false;
+}
+
+// ─── Results rendering ─────────────────────────────────────────────────────
+function renderResults(d) {
+  document.getElementById('results-empty').classList.add('hidden');
+  document.getElementById('results-content').classList.remove('hidden');
+  document.getElementById('res-acc').textContent = (d.accuracy*100).toFixed(1)+'%';
+  document.getElementById('res-cv').textContent = `${(d.cv_mean*100).toFixed(1)}±${(d.cv_std*100).toFixed(1)}%`;
+  document.getElementById('res-model').textContent = d.model_type.toUpperCase();
+
+  // Confusion matrix
+  const classes = d.classes;
+  const cm = d.confusion_matrix;
+  let html = '<table class="cm"><thead><tr><th></th>'+classes.map(c=>`<th>${c}</th>`).join('')+'</tr></thead><tbody>';
+  cm.forEach((row,i)=>{
+    html += `<tr><th style="text-align:left;color:var(--text2);">${classes[i]}</th>`;
+    row.forEach((val,j)=>{
+      const cls = i===j?'diag':(val>0?'off':'');
+      html += `<td class="${cls}">${val}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('cm-container').innerHTML = html;
+
+  // Per-class metrics
+  const tbody = document.getElementById('metrics-body');
+  tbody.innerHTML = '';
+  for (const [cls,m] of Object.entries(d.per_class_metrics)) {
+    const f1Color = m.f1>0.9?'var(--accent3)':m.f1>0.7?'var(--warn)':'var(--danger)';
+    tbody.innerHTML += `<tr>
+      <td><span class="chip">${cls}</span></td>
+      <td>${(m.precision*100).toFixed(1)}%</td>
+      <td>${(m.recall*100).toFixed(1)}%</td>
+      <td style="color:${f1Color};font-weight:500;">${(m.f1*100).toFixed(1)}%</td>
+      <td>${m.support}</td>
+    </tr>`;
+  }
+}
+
+// ─── Classification ────────────────────────────────────────────────────────
+const BAR_COLORS = ['#00e5ff','#10b981','#f59e0b','#ef4444','#7c3aed','#ec4899'];
+
+async function classifySignal() {
+  const text = document.getElementById('iq-input').value.trim();
+  if (!text) { toast('Paste IQ values first','err'); return; }
+  setStatus('classifying…','busy');
+  try {
+    const r = await fetch(API+'/api/classify', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ iq_text: text })
+    });
+    const d = await r.json();
+    if (!r.ok || d.error) { toast(d.error||'Classification failed','err'); setStatus('error','error'); return; }
+
+    document.getElementById('classify-empty').classList.add('hidden');
+    document.getElementById('classify-result').classList.remove('hidden');
+    document.getElementById('result-mod').textContent = d.predicted;
+    document.getElementById('result-conf').textContent = `${(d.confidence*100).toFixed(1)}% confidence · ${d.n_samples} IQ pairs`;
+
+    const conf = d.confidence;
+    const badge = document.getElementById('result-badge');
+    if (conf > 0.9) { badge.textContent='HIGH CONF'; badge.style.cssText='background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3);'; }
+    else if (conf > 0.6) { badge.textContent='MED CONF'; badge.style.cssText='background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3);'; }
+    else { badge.textContent='LOW CONF'; badge.style.cssText='background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);'; }
+
+    // Probability bars
+    const probs = d.probabilities;
+    const entries = Object.entries(probs).sort((a,b)=>b[1]-a[1]);
+    document.getElementById('prob-bars').innerHTML = entries.map(([cls,p],i)=>`
+      <div class="bar-row">
+        <span class="bar-label">${cls}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${(p*100).toFixed(1)}%;background:${BAR_COLORS[i%BAR_COLORS.length]}"></div></div>
+        <span class="bar-pct">${(p*100).toFixed(1)}%</span>
+      </div>`).join('');
+
+    drawConstellation(d.constellation);
+    setStatus('model ready','ready');
+  } catch(e) {
+    toast('Error: '+e.message,'err');
+    setStatus('error','error');
+  }
+}
+
+function drawConstellation(pairs) {
+  const canvas = document.getElementById('const-canvas');
+  const ctx = canvas.getContext('2d');
+  const W=260, H=260;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = '#0f1318';
+  ctx.roundRect(0,0,W,H,10); ctx.fill();
+
+  const Is=pairs.map(p=>p[0]), Qs=pairs.map(p=>p[1]);
+  const ext = Math.max(...[...Is,...Qs].map(Math.abs))*1.25||1;
+  const toX=v=>(v/ext+1)/2*W, toY=v=>(1-v/ext)/2*H;
+
+  // Grid lines
+  ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=0.5;
+  [0.5,0.25,0.75].forEach(f=>{
+    ctx.beginPath(); ctx.moveTo(W*f,0); ctx.lineTo(W*f,H); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,H*f); ctx.lineTo(W,H*f); ctx.stroke();
+  });
+
+  // Axes
+  ctx.strokeStyle='rgba(0,229,255,0.2)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(W/2,0); ctx.lineTo(W/2,H); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0,H/2); ctx.lineTo(W,H/2); ctx.stroke();
+
+  // Points
+  ctx.fillStyle='rgba(0,229,255,0.8)';
+  for (const p of pairs) {
+    ctx.beginPath(); ctx.arc(toX(p[0]),toY(p[1]),2.5,0,2*Math.PI); ctx.fill();
+  }
+
+  // Labels
+  ctx.fillStyle='rgba(0,229,255,0.35)'; ctx.font='10px DM Mono,monospace';
+  ctx.fillText('I→', W-22, H/2-5);
+  ctx.fillText('Q↑', W/2+5, 14);
+}
+
+// ─── Sample data ───────────────────────────────────────────────────────────
+function randn() {
+  let u=0,v=0; while(!u)u=Math.random(); while(!v)v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+function genSample(mod) {
+  const n=64, snr=15;
+  const map = {
+    BPSK:[[1,0],[-1,0]],
+    QPSK:[[0.707,0.707],[-0.707,0.707],[-0.707,-0.707],[0.707,-0.707]],
+    '16QAM':[...[-3,-1,1,3].flatMap(i=>[-3,-1,1,3].map(q=>[i,q]))],
+    '64QAM':[...[-7,-5,-3,-1,1,3,5,7].flatMap(i=>[-7,-5,-3,-1,1,3,5,7].map(q=>[i,q]))]
+  };
+  const sym = map[mod];
+  const pts = Array.from({length:n},()=>sym[Math.floor(Math.random()*sym.length)]);
+  const avgP = pts.reduce((a,p)=>a+(p[0]**2+p[1]**2),0)/pts.length;
+  const ns = Math.sqrt(avgP/(2*Math.pow(10,snr/10)));
+  return pts.map(p=>[p[0]+randn()*ns, p[1]+randn()*ns]);
+}
+function loadSample(mod) {
+  const pairs = genSample(mod);
+  document.getElementById('iq-input').value = pairs.map(p=>{
+    const re=p[0].toFixed(4), im=p[1];
+    return re+(im>=0?'+':'')+im.toFixed(4)+'i';
+  }).join('\n');
+}
+
+// ─── Template download ─────────────────────────────────────────────────────
+function downloadTemplate() {
+  const rows = ['label,I_1,Q_1,I_2,Q_2,I_3,Q_3,I_4,Q_4,I_5,Q_5'];
+  const mods = {BPSK:[[1,0],[-1,0]],QPSK:[[0.707,0.707],[-0.707,0.707],[-0.707,-0.707],[0.707,-0.707]]};
+  for(const [mod,sym] of Object.entries(mods)) {
+    for(let i=0;i<5;i++) {
+      const pts = Array.from({length:5},()=>sym[Math.floor(Math.random()*sym.length)]);
+      rows.push([mod,...pts.flatMap(p=>[p[0].toFixed(3),p[1].toFixed(3)])].join(','));
+    }
+  }
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(rows.join('\n'));
+  a.download='rf_dataset_template.csv'; a.click();
+}
+
+// ─── Init ──────────────────────────────────────────────────────────────────
+async function init() {
+  setStatus('checking model…','busy');
+  try {
+    const r = await fetch(API+'/api/model-info');
+    const d = await r.json();
+    if (d.trained) {
+      setStatus('model ready','ready');
+      document.getElementById('classify-btn').disabled = false;
+      toast('Saved model loaded','ok');
+    } else {
+      setStatus('no model — train first','');
+    }
+  } catch(e) { setStatus('backend offline','error'); }
+}
+document.getElementById('classify-btn').disabled = true;
+init();
+</script>
+</body>
+</html>
