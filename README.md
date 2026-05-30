@@ -17,7 +17,7 @@ Next, prepare your IQ values by running your signal simulation or transceiver mo
 writematrix([real(sig)' imag(sig)'], 'iq.csv')
 Finally, to run the classification, click on the 02 / Classify tab and paste your copied MATLAB IQ values directly into the text box inside the IQ Input card. The system flexibly accepts complex notation (0.707+0.707i), line-by-line pairs (0.707 0.707), or matrix row-vectors ([0.707 0.707; -0.707 -0.707]). Alternatively, you can use the quick-load sample preset buttons (BPSK, QPSK, 16-QAM, 64-QAM) and click the teal Classify button to execute the inference model, or click Clear to reset the field.<img width="1334" height="543" alt="Screenshot 2026-05-30 011355" src="https://github.com/user-attachments/assets/5b86dd26-7389-4049-b8e6-e11c6adc5ebf" />
 <img width="1322" height="454" alt="Screenshot 2026-05-30 011427" src="https://github.com/user-attachments/assets/78de4f25-4cbb-49ef-a2d4-71354f2962f0" />
-<img width="1298" height="865" alt="image" src="https://github.com/user-attachments/assets/fe24a0e8-aecc-403d-b5b5-a24726716f2c" />
+
 
 
 
@@ -27,7 +27,7 @@ Finally, to run the classification, click on the 02 / Classify tab and paste you
 # Demo/Results
 The RFClassify web dashboard provides an interactive workspace for validating real-time signal recognition, accommodating testing for both baseline and higher-order digital modulations including BPSK, QPSK, 16-QAM, and 64-QAM. Within the user interface, the Status Banner in the top-right corner dynamically tracks model readiness, updating from ● no model - train first to an active state once a workspace framework is initialized. To verify a waveform, the IQ Input Panel ingests complex multi-row array text blocks formatted directly from standard MATLAB workspace matrix conversions using the writematrix function, or via quick-load sample presets. Upon clicking the teal "Classify" button, the backend evaluates the pasted coordinates against the trained Support Vector Machine (SVM) hyperplane, instantly updating the right-hand Result Panel Display from its idle state ("Paste IQ values and click Classify") to showcase the finalized text prediction string detailing the identified modulation scheme.
 <img width="1263" height="742" alt="image" src="https://github.com/user-attachments/assets/f86ea11a-4102-4226-b217-0a29d5d7c7e2" />
-
+<img width="1298" height="865" alt="image" src="https://github.com/user-attachments/assets/fe24a0e8-aecc-403d-b5b5-a24726716f2c" />
 
   
 # Reference
