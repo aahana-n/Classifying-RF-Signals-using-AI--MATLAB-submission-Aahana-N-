@@ -36,3 +36,6 @@ The RFClassify web dashboard provides an interactive workspace for validating re
 Christopher Gravelle and Ruolin Zhou, "SDR Demonstration of Signal Classification in Real-Time using Deep Learning".
 Daniil Stafeev and Mikhail Ronkin, "Data Collection for Classification of Radio Signals Using SDR Transceivers".
 Shadman Rahman Doha and Ahmed Abdelhadi, "Artificial Intelligence in Software Defined Radio: A Survey".
+
+Training data: RadioML 2016.10A (DeepSig), 600 samples/class, SNR ≥ 0dB
+Source: https://www.kaggle.com/datasets/nolasthitnotomorrow/radioml2016-deepsigcom
