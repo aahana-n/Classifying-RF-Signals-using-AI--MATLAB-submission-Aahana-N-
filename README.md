@@ -17,6 +17,8 @@ Next, prepare your IQ values by running your signal simulation or transceiver mo
 writematrix([real(sig)' imag(sig)'], 'iq.csv')
 Finally, to run the classification, click on the 02 / Classify tab and paste your copied MATLAB IQ values directly into the text box inside the IQ Input card. The system flexibly accepts complex notation (0.707+0.707i), line-by-line pairs (0.707 0.707), or matrix row-vectors ([0.707 0.707; -0.707 -0.707]). Alternatively, you can use the quick-load sample preset buttons (BPSK, QPSK, 16-QAM, 64-QAM) and click the teal Classify button to execute the inference model, or click Clear to reset the field.<img width="1334" height="543" alt="Screenshot 2026-05-30 011355" src="https://github.com/user-attachments/assets/5b86dd26-7389-4049-b8e6-e11c6adc5ebf" />
 <img width="1322" height="454" alt="Screenshot 2026-05-30 011427" src="https://github.com/user-attachments/assets/78de4f25-4cbb-49ef-a2d4-71354f2962f0" />
+<img width="1298" height="865" alt="image" src="https://github.com/user-attachments/assets/fe24a0e8-aecc-403d-b5b5-a24726716f2c" />
+
 
 
 
