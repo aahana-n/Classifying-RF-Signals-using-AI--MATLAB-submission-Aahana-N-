@@ -25,10 +25,13 @@ Finally, to run the classification, click on the 02 / Classify tab and paste you
 
 
 # Demo/Results
+Generated RF signals in matlab via code and simulink blocks were transmitted and successfully received at the SDR receiver upon which the IQ data was extracted and later pasted into the web interface for classification.
 The RFClassify web dashboard provides an interactive workspace for validating real-time signal recognition, accommodating testing for both baseline and higher-order digital modulations including BPSK, QPSK, 16-QAM, and 64-QAM. Within the user interface, the Status Banner in the top-right corner dynamically tracks model readiness. To verify a waveform, the IQ Input Panel ingests complex multi-row array text blocks formatted directly from standard MATLAB workspace matrix conversions using the writematrix function, or via quick-load sample presets. Upon clicking the teal "Classify" button, the backend evaluates the pasted coordinates against the trained Support Vector Machine (SVM) hyperplane, instantly updating the right-hand Result Panel Display from its idle state ("Paste IQ values and click Classify") to showcase the finalized text prediction string detailing the identified modulation scheme.
+<img width="1600" height="573" alt="WhatsApp Image 2026-05-31 at 11 40 38 AM" src="https://github.com/user-attachments/assets/e16d39ef-197c-4bc7-b8bb-f456488b726f" />
+sdr transmitter block diagram sample
+<img width="1466" height="389" alt="390e8db1-7f33-43a6-b489-fc7e0cad1758" src="https://github.com/user-attachments/assets/b23ea0ca-b9bf-483c-a8e6-82788562a16d" />
+sdr receiver simulink block diagram
 <img width="1600" height="1200" alt="WhatsApp Image 2026-05-31 at 11 20 15 AM" src="https://github.com/user-attachments/assets/db771903-bad7-4e71-821a-cfd1b83b5e77" />
-
-
 <img width="1263" height="742" alt="image" src="https://github.com/user-attachments/assets/f86ea11a-4102-4226-b217-0a29d5d7c7e2" />
 <img width="1298" height="865" alt="image" src="https://github.com/user-attachments/assets/fe24a0e8-aecc-403d-b5b5-a24726716f2c" />
 <img width="1332" height="928" alt="image" src="https://github.com/user-attachments/assets/d5556e19-5660-4b3c-ab04-cc2eed64bcf6" />
