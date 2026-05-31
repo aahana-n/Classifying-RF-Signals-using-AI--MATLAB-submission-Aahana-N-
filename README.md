@@ -15,11 +15,7 @@ In the deployment and testing phase, target waveforms including Sine Waves, AM, 
 To initialize the workflow, open the RFClassify dashboard application. If the status indicator in the top-right corner reads ● no model - train first, navigate to the 01 / Train tab to load your training feature matrix and initialize your SVM classifier workspace.
 Next, prepare your IQ values by running your signal simulation or transceiver model in MATLAB to capture baseband complex IQ data samples. Convert the workspace signal array into a format accepted by the app's clipboard parser—ensuring a minimum of 8 IQ pairs for valid inference—by running the following command in your MATLAB command window to generate a standard column file.
 writematrix([real(sig)' imag(sig)'], 'iq.csv')
-Finally, to run the classification, click on the 02 / Classify tab and paste your copied MATLAB IQ values directly into the text box inside the IQ Input card. The system flexibly accepts complex notation (0.707+0.707i), line-by-line pairs (0.707 0.707), or matrix row-vectors ([0.707 0.707; -0.707 -0.707]). Alternatively, you can use the quick-load sample preset buttons (BPSK, QPSK, 16-QAM, 64-QAM) and click the teal Classify button to execute the inference model, or click Clear to reset the field. IQ samples obtained from matlab would be pasted into the box and upon clicking classify button the results would be displayed. <img width="1334" height="543" alt="Screenshot 2026-05-30 011355" src="https://github.com/user-attachments/assets/5b86dd26-7389-4049-b8e6-e11c6adc5ebf" />
-<img width="1322" height="454" alt="Screenshot 2026-05-30 011427" src="https://github.com/user-attachments/assets/78de4f25-4cbb-49ef-a2d4-71354f2962f0" />
-
-
-
+Finally, to run the classification, click on the 02 / Classify tab and paste your copied MATLAB IQ values directly into the text box inside the IQ Input card. The system flexibly accepts complex notation (0.707+0.707i), line-by-line pairs (0.707 0.707), or matrix row-vectors ([0.707 0.707; -0.707 -0.707]). Alternatively, you can use the quick-load sample preset buttons (BPSK, QPSK, 16-QAM, 64-QAM) and click the teal Classify button to execute the inference model, or click Clear to reset the field. IQ samples obtained from matlab would be pasted into the box and upon clicking classify button the results would be displayed.
 
 
 
@@ -29,7 +25,7 @@ Generated RF signals in matlab via code and simulink blocks were transmitted and
 The RFClassify web dashboard provides an interactive workspace for validating real-time signal recognition, accommodating testing for both baseline and higher-order digital modulations including BPSK, QPSK, 16-QAM, and 64-QAM. Within the user interface, the Status Banner in the top-right corner dynamically tracks model readiness. To verify a waveform, the IQ Input Panel ingests complex multi-row array text blocks formatted directly from standard MATLAB workspace matrix conversions using the writematrix function, or via quick-load sample presets. Upon clicking the teal "Classify" button, the backend evaluates the pasted coordinates against the trained Support Vector Machine (SVM) hyperplane, instantly updating the right-hand Result Panel Display from its idle state ("Paste IQ values and click Classify") to showcase the finalized text prediction string detailing the identified modulation scheme.
 <img width="1600" height="573" alt="WhatsApp Image 2026-05-31 at 11 40 38 AM" src="https://github.com/user-attachments/assets/e16d39ef-197c-4bc7-b8bb-f456488b726f" />
 sdr transmitter block diagram sample
-<img width="1466" height="389" alt="390e8db1-7f33-43a6-b489-fc7e0cad1758" src="https://github.com/user-attachments/assets/b23ea0ca-b9bf-483c-a8e6-82788562a16d" />
+<img width="1395" height="416" alt="image" src="https://github.com/user-attachments/assets/94f059fd-5522-4f3c-a4fd-abd7e336633d" />
 sdr receiver simulink block diagram
 <img width="1600" height="1200" alt="WhatsApp Image 2026-05-31 at 11 20 15 AM" src="https://github.com/user-attachments/assets/db771903-bad7-4e71-821a-cfd1b83b5e77" />
 <img width="1263" height="742" alt="image" src="https://github.com/user-attachments/assets/f86ea11a-4102-4226-b217-0a29d5d7c7e2" />
