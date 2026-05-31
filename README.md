@@ -29,6 +29,8 @@ The RFClassify web dashboard provides an interactive workspace for validating re
 <img width="1263" height="742" alt="image" src="https://github.com/user-attachments/assets/f86ea11a-4102-4226-b217-0a29d5d7c7e2" />
 <img width="1298" height="865" alt="image" src="https://github.com/user-attachments/assets/fe24a0e8-aecc-403d-b5b5-a24726716f2c" />
 <img width="1332" height="928" alt="image" src="https://github.com/user-attachments/assets/d5556e19-5660-4b3c-ab04-cc2eed64bcf6" />
+<img width="1236" height="915" alt="image" src="https://github.com/user-attachments/assets/d7f17629-25ac-451d-9929-a49d4e7175b4" />
+
 
 
 
