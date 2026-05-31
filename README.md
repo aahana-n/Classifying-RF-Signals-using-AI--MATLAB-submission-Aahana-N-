@@ -16,6 +16,7 @@ To initialize the workflow, open the RFClassify dashboard application. If the st
 Next, prepare your IQ values by running your signal simulation or transceiver model in MATLAB to capture baseband complex IQ data samples. Convert the workspace signal array into a format accepted by the app's clipboard parser—ensuring a minimum of 8 IQ pairs for valid inference—by running the following command in your MATLAB command window to generate a standard column file.
 writematrix([real(sig)' imag(sig)'], 'iq.csv')
 Finally, to run the classification, click on the 02 / Classify tab and paste your copied MATLAB IQ values directly into the text box inside the IQ Input card. The system flexibly accepts complex notation (0.707+0.707i), line-by-line pairs (0.707 0.707), or matrix row-vectors ([0.707 0.707; -0.707 -0.707]). Alternatively, you can use the quick-load sample preset buttons (BPSK, QPSK, 16-QAM, 64-QAM) and click the teal Classify button to execute the inference model, or click Clear to reset the field. IQ samples obtained from matlab would be pasted into the box and upon clicking classify button the results would be displayed.
+<img width="1577" height="997" alt="image" src="https://github.com/user-attachments/assets/b53b12e3-31c3-45e3-a658-54401899784d" />
 
 
 
